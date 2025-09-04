@@ -1,0 +1,32 @@
+{
+  "churn_model": {
+    "type": "DecisionTree",
+    "accuracy": 1.0,
+    "features": [
+      "recency",
+      "frequency",
+      "monetary",
+      "avg_order_value",
+      "pct_card",
+      "avg_installments",
+      "avg_review",
+      "n_categories"
+    ],
+    "version": "20250904_133043"
+  },
+  "clv_model": {
+    "type": "Ridge",
+    "rmse": 0.00015172739386940619,
+    "features": [
+      "recency",
+      "frequency",
+      "monetary",
+      "avg_order_value",
+      "pct_card",
+      "avg_installments",
+      "avg_review",
+      "n_categories"
+    ],
+    "version": "20250904_133043"
+  }
+}
