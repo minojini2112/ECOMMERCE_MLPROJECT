@@ -89,7 +89,24 @@ class EcommerceDataProcessor:
         
         # Label churn & set CLV target
         self.cust_feats["churned"] = (self.cust_feats["recency"] > 90).astype(int)
-        self.cust_feats["CLV"] = self.cust_feats["monetary"]
+        
+        # Calculate proper CLV (Customer Lifetime Value)
+        # CLV = (Average Order Value × Purchase Frequency × Customer Lifespan)
+        # For this dataset, we'll use: CLV = monetary × (1 + frequency/10) × (1 + avg_review/5) × (1 - recency/365)
+        # This gives a more realistic CLV that considers multiple factors
+        
+        # Handle NaN values in avg_review by filling with median
+        avg_review_filled = self.cust_feats["avg_review"].fillna(self.cust_feats["avg_review"].median())
+        
+        self.cust_feats["CLV"] = (
+            self.cust_feats["monetary"] * 
+            (1 + self.cust_feats["frequency"] / 10) * 
+            (1 + avg_review_filled / 5) * 
+            np.maximum(0.1, 1 - self.cust_feats["recency"] / 365)  # Minimum 10% of base value
+        )
+        
+        # Ensure no NaN values remain
+        self.cust_feats["CLV"] = self.cust_feats["CLV"].fillna(self.cust_feats["monetary"])
         
         print(f"✅ Customer features created: {self.cust_feats.shape}")
         return self.cust_feats

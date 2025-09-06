@@ -36,6 +36,7 @@ def load_models():
             # Split by '_' and take the last two parts (date_time)
             version_parts = latest_file.replace('churn_model_', '').replace('.pkl', '').split('_')
             latest_version = '_'.join(version_parts)
+            print(f"Loading model version: {latest_version}")  # Debug info
             return MLModelPredictor(latest_version)
     return None
 

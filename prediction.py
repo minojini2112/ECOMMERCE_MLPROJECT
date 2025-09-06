@@ -45,70 +45,12 @@ class MLModelPredictor:
         return customer_data_scaled
     
     def predict_churn(self, customer_data):
-        """Predict churn probability with realistic business logic"""
-        # Get original values for business logic
-        recency = customer_data.get('recency', 0)
-        frequency = customer_data.get('frequency', 0)
-        monetary = customer_data.get('monetary', 0)
-        avg_order_value = customer_data.get('avg_order_value', 0)
-        pct_card = customer_data.get('pct_card', 0)
-        avg_installments = customer_data.get('avg_installments', 0)
-        avg_review = customer_data.get('avg_review', 0)
-        n_categories = customer_data.get('n_categories', 0)
+        """Predict churn probability using trained ML model"""
+        # Preprocess the input data
+        processed_data = self.preprocess_input(customer_data)
         
-        # Calculate churn probability based on business rules
-        churn_prob = 0.0
-        
-        # Recency factor (most important)
-        if recency == 0:
-            churn_prob = 0.05  # Just made a purchase - very low risk
-        elif recency <= 7:
-            churn_prob = 0.10  # Recent purchase - low risk
-        elif recency <= 30:
-            churn_prob = 0.25  # Somewhat recent - low-medium risk
-        elif recency <= 60:
-            churn_prob = 0.45  # Getting stale - medium risk
-        elif recency <= 90:
-            churn_prob = 0.65  # Stale - high risk
-        else:
-            churn_prob = 0.85  # Very stale - very high risk
-        
-        # Frequency adjustment
-        if frequency >= 10:
-            churn_prob *= 0.6  # High frequency reduces risk
-        elif frequency >= 5:
-            churn_prob *= 0.8  # Medium frequency slightly reduces risk
-        elif frequency <= 1:
-            churn_prob *= 1.3  # Low frequency increases risk
-        
-        # Monetary value adjustment
-        if monetary >= 1000:
-            churn_prob *= 0.7  # High value reduces risk
-        elif monetary >= 500:
-            churn_prob *= 0.85  # Medium value slightly reduces risk
-        elif monetary <= 50:
-            churn_prob *= 1.2  # Low value increases risk
-        
-        # Review score adjustment
-        if avg_review >= 4.5:
-            churn_prob *= 0.8  # High satisfaction reduces risk
-        elif avg_review <= 2.0:
-            churn_prob *= 1.3  # Low satisfaction increases risk
-        
-        # Credit card usage adjustment
-        if pct_card >= 0.8:
-            churn_prob *= 0.9  # Heavy credit card users are more loyal
-        elif pct_card <= 0.2:
-            churn_prob *= 1.1  # Low credit card usage slightly increases risk
-        
-        # Categories adjustment
-        if n_categories >= 5:
-            churn_prob *= 0.9  # Diverse purchases reduce risk
-        elif n_categories <= 1:
-            churn_prob *= 1.1  # Limited categories increase risk
-        
-        # Ensure reasonable bounds
-        churn_prob = max(0.01, min(0.99, churn_prob))
+        # Use the trained churn model to predict probability
+        churn_prob = self.churn_model.predict_proba(processed_data)[0][1]  # Probability of churn (class 1)
         
         return {
             'churn_probability': churn_prob,
@@ -117,50 +59,12 @@ class MLModelPredictor:
         }
     
     def predict_clv(self, customer_data):
-        """Predict Customer Lifetime Value with realistic business logic"""
-        # Get original values for business logic
-        recency = customer_data.get('recency', 0)
-        frequency = customer_data.get('frequency', 0)
-        monetary = customer_data.get('monetary', 0)
-        avg_order_value = customer_data.get('avg_order_value', 0)
-        avg_review = customer_data.get('avg_review', 0)
+        """Predict Customer Lifetime Value using trained ML model"""
+        # Preprocess the input data
+        processed_data = self.preprocess_input(customer_data)
         
-        # Calculate CLV based on business rules
-        # Base CLV starts with current monetary value
-        base_clv = monetary
-        
-        # Adjust based on frequency (more orders = higher potential)
-        if frequency >= 10:
-            clv_multiplier = 2.5  # High frequency customers
-        elif frequency >= 5:
-            clv_multiplier = 2.0  # Medium frequency customers
-        elif frequency >= 3:
-            clv_multiplier = 1.5  # Low-medium frequency customers
-        else:
-            clv_multiplier = 1.0  # Low frequency customers
-        
-        # Adjust based on recency
-        if recency == 0:
-            recency_multiplier = 1.3  # Just made a purchase - high potential
-        elif recency <= 30:
-            recency_multiplier = 1.1  # Recent activity - good potential
-        elif recency <= 60:
-            recency_multiplier = 0.9  # Somewhat stale - reduced potential
-        elif recency <= 90:
-            recency_multiplier = 0.7  # Stale - low potential
-        else:
-            recency_multiplier = 0.5  # Very stale - very low potential
-        
-        # Adjust based on review score
-        if avg_review >= 4.5:
-            review_multiplier = 1.2  # High satisfaction
-        elif avg_review >= 3.5:
-            review_multiplier = 1.0  # Average satisfaction
-        else:
-            review_multiplier = 0.8  # Low satisfaction
-        
-        # Calculate final CLV
-        clv_prediction = base_clv * clv_multiplier * recency_multiplier * review_multiplier
+        # Use the trained CLV model to predict value
+        clv_prediction = self.clv_model.predict(processed_data)[0]
         
         # Ensure reasonable bounds
         clv_prediction = max(50, min(5000, clv_prediction))
@@ -171,41 +75,19 @@ class MLModelPredictor:
         }
     
     def predict_segment(self, customer_data):
-        """Predict customer segment with business logic"""
+        """Predict customer segment using trained ML model"""
         processed_data = self.preprocess_input(customer_data)
         
-        # Get original values for business logic
-        recency = customer_data.get('recency', 0)
-        frequency = customer_data.get('frequency', 0)
-        monetary = customer_data.get('monetary', 0)
+        # Use the trained clustering model with PCA transformation
+        pca_transformed = self.pca_model.transform(processed_data)
+        segment = self.clustering_model.predict(pca_transformed)[0]
         
-        # Business logic for segmentation
-        if recency == 0 and frequency >= 5 and monetary >= 500:
-            segment_name = 'Champions'
-            segment_id = 0
-        elif recency <= 30 and frequency >= 3 and monetary >= 200:
-            segment_name = 'Loyal Customers'
-            segment_id = 1
-        elif recency <= 60 and frequency >= 2:
-            segment_name = 'Potential Loyalists'
-            segment_id = 2
-        elif recency > 90 or frequency <= 1:
-            segment_name = 'At Risk'
-            segment_id = 3
-        else:
-            # Fallback to model prediction
-            try:
-                pca_transformed = self.pca_model.transform(processed_data)
-                segment = self.clustering_model.predict(pca_transformed)[0]
-                segment_names = {0: 'Champions', 1: 'Loyal Customers', 2: 'Potential Loyalists', 3: 'At Risk'}
-                segment_name = segment_names.get(segment, 'Unknown')
-                segment_id = segment
-            except:
-                segment_name = 'Potential Loyalists'
-                segment_id = 2
+        # Map segment IDs to meaningful names
+        segment_names = {0: 'Champions', 1: 'Loyal Customers', 2: 'Potential Loyalists', 3: 'At Risk'}
+        segment_name = segment_names.get(segment, 'Unknown')
         
         return {
-            'segment_id': segment_id,
+            'segment_id': segment,
             'segment_name': segment_name
         }
     
