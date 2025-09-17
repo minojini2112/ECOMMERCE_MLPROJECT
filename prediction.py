@@ -24,6 +24,7 @@ class MLModelPredictor:
             print(f"❌ Error loading models: {e}")
             print("Make sure model files exist and version is correct")
     
+    
     def preprocess_input(self, customer_data):
         """Preprocess single customer input using the same pipeline as training"""
         # Convert to DataFrame if not already
@@ -45,12 +46,33 @@ class MLModelPredictor:
         return customer_data_scaled
     
     def predict_churn(self, customer_data):
-        """Predict churn probability using trained ML model"""
+        """Predict churn probability using hybrid ML + business logic model"""
         # Preprocess the input data
         processed_data = self.preprocess_input(customer_data)
         
-        # Use the trained churn model to predict probability
-        churn_prob = self.churn_model.predict_proba(processed_data)[0][1]  # Probability of churn (class 1)
+        # Get recency value for business logic
+        recency = customer_data.get('recency', 0)
+        
+        # Use ML model for non-recency features (exclude recency at index 0)
+        non_recency_features = [1, 2, 3, 4, 5, 6, 7]  # Exclude recency (index 0)
+        non_recency_data = processed_data[:, non_recency_features]
+        ml_prob = self.churn_model.predict_proba(non_recency_data)[0][1]
+        
+        # Apply business logic for recency
+        if recency <= 30:
+            recency_multiplier = 0.1  # Very low churn
+        elif recency <= 60:
+            recency_multiplier = 0.3  # Low churn
+        elif recency <= 90:
+            recency_multiplier = 0.6  # Medium churn
+        elif recency <= 120:
+            recency_multiplier = 0.8  # High churn
+        else:
+            recency_multiplier = 0.95  # Very high churn
+        
+        # Combine ML prediction with recency logic
+        churn_prob = ml_prob * recency_multiplier
+        churn_prob = min(0.99, max(0.01, churn_prob))  # Ensure reasonable bounds
         
         return {
             'churn_probability': churn_prob,
